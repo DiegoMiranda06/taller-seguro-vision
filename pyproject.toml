@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "taller-seguro-vision"
+version = "0.1.0"
+description = "Dispositivo edge AI offline que detecta near-miss (sin lentes, guantes, mano en zona roja, llave de mandril) en tornos/fresadoras y graba clips locales de evidencia."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.11"
+authors = [{ name = "Diego Miranda" }]
+
+# Deps base: corren en cualquier laptop, sin hardware de Raspberry Pi.
+# Ver Reglas No Negociables #6 en CLAUDE.md: requirements.txt (base) nunca
+# debe forzar gpiozero/picamera2/pycoral/tflite-runtime.
+dependencies = [
+    "ultralytics>=8.2",
+    "opencv-python>=4.9",
+    "numpy>=1.26",
+    "pydantic>=2.6",
+]
+
+[project.optional-dependencies]
+# Recomendado en laptops Intel sin GPU dedicada (ej. ThinkPad T480, i7-8650U + UHD 620).
+# `inference_backend: "openvino"` en el StationConfig requiere este extra.
+intel = ["openvino>=2024.0"]
+
+# Solo Raspberry Pi (modo production). `inference_backend: "edgetpu"`,
+# `camera_source: "picamera"` y `alert_output: "gpio"` requieren este extra.
+pi = [
+    "gpiozero>=2.0",
+    "picamera2>=0.3",
+    "pycoral>=2.0",
+    "tflite-runtime>=2.13",
+]
+
+# Herramientas de desarrollo (tests + lint) — no necesarias para correr el pipeline.
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
