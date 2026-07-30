@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+
+# Project artifacts (never commit — large and/or sensitive)
+models/*.pt
+models/*.tflite
+models/*.onnx
+datasets/raw/
+clips/
+
+# OS
+.DS_Store
+Thumbs.db
