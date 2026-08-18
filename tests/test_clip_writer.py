@@ -110,7 +110,7 @@ def test_clip_writer_sidecar_has_required_stps_fields(tmp_path, synthetic_video_
 
     event = Event(
         station_id="torno_test",
-        event_type=EventType.HAND_IN_RED_ZONE,
+        event_type=EventType.NO_HELMET,
         confidence=0.66,
     )
     writer = ClipWriter(output_root=tmp_path / "clips", fps=10.0)
@@ -125,7 +125,7 @@ def test_clip_writer_sidecar_has_required_stps_fields(tmp_path, synthetic_video_
         assert required_field in sidecar, f"missing required sidecar field: {required_field}"
 
     assert sidecar["station_id"] == "torno_test"
-    assert sidecar["event_type"] == "hand_in_red_zone"
+    assert sidecar["event_type"] == "no_helmet"
     assert sidecar["confidence"] == 0.66
     assert sidecar["clip_path"] == event.clip_path
     assert sidecar["resolved"] is False
@@ -138,7 +138,7 @@ def test_clip_writer_produces_playable_video_with_expected_frame_count(
     pre_frames = [(float(i), f) for i, f in enumerate(frames[:5])]
     post_frames = [(float(i + 5), f) for i, f in enumerate(frames[5:10])]
 
-    event = Event(station_id="torno_test", event_type=EventType.CHUCK_KEY_VISIBLE, confidence=0.5)
+    event = Event(station_id="torno_test", event_type=EventType.NO_GLASSES, confidence=0.5)
     writer = ClipWriter(output_root=tmp_path / "clips", fps=10.0)
     writer.flush(event, pre_frames, post_frames)
 

@@ -8,21 +8,23 @@
 ## 1. Project Overview
 
 ### Vision
-Taller Seguro Vision es un dispositivo de visión por computadora en el borde (edge AI), 100% offline, que detecta "casi accidentes" (near miss) en tornos y fresadoras de talleres metal-mecánicos: operación sin lentes de seguridad, guantes puestos cerca del husillo, manos entrando en la zona de peligro del mandril, y llave de mandril olvidada. Cuando detecta riesgo, enciende una torre de luz roja y graba un clip local (7s antes + 8s después) a USB, con metadata para reporte STPS. Está pensado para talleres PyME mexicanos que no pueden pagar sistemas industriales de $10k-25k USD.
+Taller Seguro Vision es un dispositivo de visión por computadora en el borde (edge AI), 100% offline, cuya visión de producto es detectar "casi accidentes" (near miss) en tornos y fresadoras de talleres metal-mecánicos: operación sin lentes de seguridad, guantes puestos cerca del husillo, manos entrando en la zona de peligro del mandril, y llave de mandril olvidada. Cuando detecta riesgo, enciende una torre de luz roja (o hoy, mientras no hay relay, una alerta en consola) y graba un clip local (7s antes + 8s después) a USB, con metadata para reporte STPS. Está pensado para talleres PyME mexicanos que no pueden pagar sistemas industriales de $10k-25k USD.
 
-**Contexto estratégico**: el primer despliegue real es en el taller de un conocido (1 cámara, hasta 2 máquinas). Pero el objetivo de negocio es usar este repo como vehículo para levantar capital semilla (Fondeadora, Play Business, CONAHCYT, concursos) **antes** de comprar el hardware físico. Esto significa que la Fase 0 del build debe producir un demo convincente (GIF/video) corriendo en una laptop con webcam, sin depender de ningún componente físico del kit final.
+**Alcance actual (v1) — ya en marcha**: ya se cuenta con el hardware mínimo (una **Raspberry Pi + una webcam USB sencilla**), así que el pipeline corre hoy directamente sobre ese hardware, no solo en una laptop de desarrollo. El alcance de detección se redujo a **solo EPP** — operador con/sin lentes de seguridad (`no_glasses`) y con/sin casco (`no_helmet`) — porque son las dos clases con datasets públicos ya disponibles y sin dependencia de una zona roja calibrada por estación, un torno físico, ni un relay/torre de luz. Las clases de near-miss (`glove_on_lathe`, `hand_in_red_zone`, `chuck_key_visible`) quedan documentadas como **roadmap** (Sección 9) — se retoman cuando haya dataset propio y el kit físico completo (relay, torre Andon, cámara CSI cerca del husillo).
+
+**Contexto estratégico**: el primer despliegue real es en el taller de un conocido (1 cámara, hasta 2 máquinas). Pero el objetivo de negocio es usar este repo como vehículo para levantar capital semilla (Fondeadora, Play Business, CONAHCYT, concursos) **antes** de comprar el kit físico completo (Coral, cámara CSI, torre Andon). Esto significa que la Fase 0 del build debe producir un demo convincente (GIF/video) corriendo en el hardware que ya se tiene — la Raspberry Pi + webcam USB —, sin depender de los componentes pendientes del kit final.
 
 ### Goals
-- Pipeline de detección funcional en laptop (Fase 0, sin hardware) para grabar el demo de la campaña de fondeo.
-- Mismo código, sin reescritura, corriendo en Raspberry Pi 5 + Coral USB Accelerator una vez financiado el hardware.
-- Piloto real de 1-2 semanas en el taller objetivo con datos reales de near-miss.
+- Pipeline de detección de EPP (lentes + casco) funcional en la Raspberry Pi + webcam ya disponibles, para grabar el demo de la campaña de fondeo.
+- Mismo código, sin reescritura, corriendo con Coral USB Accelerator + cámara CSI + GPIO una vez financiado el resto del kit y retomadas las clases de near-miss.
+- Piloto real de 1-2 semanas en el taller objetivo, primero validando EPP, luego con datos reales de near-miss.
 - Repositorio GitHub replicable por otros talleres (Apache 2.0), con README fondeable.
 
 ### Success Metrics
-- Demo GIF/video grabado y embebido en README antes de gastar en hardware.
-- FPS e inferencia validados en ambos modos (laptop CPU/GPU vs Pi5+Coral).
-- Tasa de falsos positivos medida durante el piloto (< 1 falsa alarma/hora como meta inicial).
-- Costo total de estación ≤ $8,000 MXN (~$400 USD), replicable.
+- Demo GIF/video de detección de EPP grabado en la Raspberry Pi + webcam ya disponibles, embebido en README, antes de gastar en el resto del kit.
+- FPS e inferencia validados en el hardware real disponible hoy (Pi + CPU `.pt`) y, más adelante, con Coral.
+- Tasa de falsos positivos medida durante el piloto de EPP (< 1 falsa alarma/hora como meta inicial).
+- Costo adicional para el kit completo (near-miss) ≤ $8,000 MXN (~$400 USD), replicable.
 
 ---
 
@@ -31,10 +33,10 @@ Taller Seguro Vision es un dispositivo de visión por computadora en el borde (e
 | Capa | Tecnología | Por qué |
 |------|-----------|---------|
 | Lenguaje | Python 3.11 | Ecosistema CV/ML maduro, corre igual en laptop y Pi |
-| Visión / modelo | Ultralytics YOLOv8n (custom, multi-clase) | Un solo modelo para las 4 clases de riesgo; export nativo a TFLite/EdgeTPU |
-| Runtime demo (laptop, fallback) | `.pt` (PyTorch) vía Ultralytics, CPU o CUDA si hay | Portable — sirve si alguien clona el repo en una máquina con GPU NVIDIA |
-| Runtime demo optimizado (Intel) | OpenVINO (export nativo de Ultralytics) | Tu ThinkPad T480 (i7-8650U + UHD 620) no tiene GPU NVIDIA — OpenVINO explota AVX2 y el iGPU Intel, notablemente más rápido que PyTorch CPU puro con el mismo modelo. Es el backend recomendado para grabar el demo. |
-| Runtime producción (Pi) | TFLite int8 compilado para Edge TPU vía `pycoral` | Necesario para tiempo real en RPi5 + Coral USB Accelerator |
+| Visión / modelo | Ultralytics YOLOv8n (custom, multi-clase) | Un solo modelo; v1 solo 2 clases de EPP (`no_glasses`, `no_helmet`), export nativo a TFLite/EdgeTPU cuando se retomen las clases de near-miss |
+| Runtime v1 (Raspberry Pi ya disponible) | `.pt` (PyTorch) vía Ultralytics, CPU (ARM) | Backend por default: corre directo en la Pi que ya se tiene, sin exportar nada ni comprar Coral. Más lento que con aceleración, pero suficiente para validar 2 clases de EPP. |
+| Runtime demo optimizado (Intel, solo para laptop) | OpenVINO (export nativo de Ultralytics) | Tu ThinkPad T480 (i7-8650U + UHD 620) no tiene GPU NVIDIA — OpenVINO explota AVX2 y el iGPU Intel. Es x86-only: **no corre en la Raspberry Pi** (ARM). Úsalo solo si sigues grabando demos desde el T480. |
+| Runtime roadmap (Pi + near-miss) | TFLite int8 compilado para Edge TPU vía `pycoral` | Cuando se sume el Coral USB Accelerator (todavía no comprado) y se retomen las clases de near-miss, para tiempo real con más clases |
 | Captura de video | OpenCV (`cv2.VideoCapture`) en demo, `Picamera2` en producción | Abstraídas detrás de una interfaz común `CameraSource` |
 | GPIO / alerta | `gpiozero` (RPi5) + relay 5V → torre Andon 12V | Path directo, más simple para primeras pruebas, como pediste |
 | Config por estación | JSON + Pydantic (validación) | `torno_01.json` define zona roja, cámara, umbrales — sin nada hardcoded |
@@ -65,8 +67,8 @@ taller-seguro-vision/
   src/
     core/
       pipeline.py                 # Orquestador: capture -> detect -> rules -> alert + recorder
-      rules_engine.py             # Evalúa detecciones contra config: sin_lentes, guante_en_torno, mano_zona_roja, llave_visible
-      zone.py                     # Point-in-polygon, normalización de coordenadas
+      rules_engine.py             # Evalúa detecciones contra config: v1 = no_glasses, no_helmet
+      zone.py                     # Point-in-polygon, normalización de coordenadas (no usado por rules_engine en v1 — reservado para near-miss del roadmap)
       event.py                    # Dataclass Event + serialización JSON
 
     capture/
@@ -121,7 +123,7 @@ taller-seguro-vision/
     test_clip_writer.py               # Buffer + escritura de clip con video de prueba
 
   assets/
-    demo_torno_sin_lentes.gif        # Demo generado en Fase 0 (laptop)
+    demo_torno_sin_lentes.gif        # Demo de EPP generado en Fase 0 (Raspberry Pi + webcam ya disponibles)
 
   .github/
     workflows/ci.yml                 # Lint (ruff) + pytest en cada push
@@ -140,7 +142,7 @@ No hay base de datos relacional — cada evento es un archivo JSON junto a su cl
 |-------|------|-------|
 | event_id | str (uuid4) | Único por evento |
 | station_id | str | Coincide con `station_id` del config |
-| event_type | enum | `no_glasses`, `glove_on_lathe`, `hand_in_red_zone`, `chuck_key_visible` |
+| event_type | enum | v1: `no_glasses`, `no_helmet`. Roadmap (near-miss, no implementado): `glove_on_lathe`, `hand_in_red_zone`, `chuck_key_visible` |
 | timestamp_utc | datetime ISO8601 | Momento del trigger (frame central del clip) |
 | confidence | float 0-1 | Score del modelo en el frame de trigger |
 | clip_path | str | Ruta relativa al .mp4 (mismo directorio) |
@@ -153,11 +155,11 @@ No hay base de datos relacional — cada evento es un archivo JSON junto a su cl
 |-------|------|-------|
 | station_id | str | Ej. `torno_01` |
 | mode | enum | `demo` \| `production` — determina qué adapters de capture/alert se instancian |
-| inference_backend | enum | `pt` \| `openvino` \| `edgetpu` — independiente de `mode`. En laptop Intel sin GPU dedicada (T480) usar `openvino`; en una máquina con GPU NVIDIA, `pt`; en el Pi siempre `edgetpu` |
-| camera_source | enum | `webcam` \| `picamera` \| `video_file` |
+| inference_backend | enum | `pt` \| `openvino` \| `edgetpu` — independiente de `mode`. Default `pt`: corre en la Raspberry Pi (ARM) ya disponible sin exportar nada. `openvino` es exclusivo de CPU/iGPU Intel x86 (ej. el T480) — **no corre en la Pi**. `edgetpu` requiere el Coral USB Accelerator (roadmap, no comprado aún) |
+| camera_source | enum | `webcam` \| `picamera` \| `video_file` — `webcam` (USB, vía OpenCV) es lo que usa la Raspberry Pi + webcam sencilla ya disponible; `picamera` (CSI) queda para cuando se sume esa cámara |
 | camera_index_or_path | str/int | Índice de webcam, o ruta de video, o `None` para Picamera2 |
-| red_zone_polygon | list[[float, float]] | Coordenadas normalizadas (0-1), generadas por `calibrate_zone.py` |
-| classes_enabled | list[str] | Subconjunto de los 4 event_type a evaluar |
+| zone | ZoneConfig \| None | Opcional en v1 (solo EPP, sin lógica de zona). Cuando se retomen las clases de near-miss del roadmap, `red_zone_polygon` (coordenadas normalizadas 0-1, generadas por `calibrate_zone.py`) vuelve a ser necesario |
+| classes_enabled | list[str] | v1: subconjunto de `{no_glasses, no_helmet}` |
 | confidence_thresholds | dict[str, float] | Umbral por clase, default 0.5 |
 | alert_output | enum | `mock` \| `gpio` |
 | gpio_pin | int \| null | Solo si `alert_output == gpio` |
@@ -175,11 +177,11 @@ class ZoneConfig(BaseModel):
 class StationConfig(BaseModel):
     station_id: str
     mode: Literal["demo", "production"]
-    inference_backend: Literal["pt", "openvino", "edgetpu"] = "openvino"
+    inference_backend: Literal["pt", "openvino", "edgetpu"] = "pt"
     camera_source: Literal["webcam", "picamera", "video_file"]
     camera_index_or_path: str | int | None = None
-    zone: ZoneConfig
-    classes_enabled: list[Literal["no_glasses", "glove_on_lathe", "hand_in_red_zone", "chuck_key_visible"]]
+    zone: ZoneConfig | None = None  # opcional en v1 (solo EPP, sin lógica de zona)
+    classes_enabled: list[Literal["no_glasses", "no_helmet"]]
     confidence_thresholds: dict[str, float] = {}
     alert_output: Literal["mock", "gpio"]
     gpio_pin: int | None = None
@@ -251,8 +253,8 @@ Arducam IMX477 ── CSI ──> Raspberry Pi 5 ── USB 3.0 ──> Coral US
 
 Dado que el objetivo es levantar capital antes de comprar hardware, el repo mismo es un activo de fondeo. No hay "design system" de UI tradicional (no hay frontend), pero sí hay estándares de presentación:
 
-- **README.md**: mantener la estructura que ya tienes (badges, problema cuantificado, demo GIF, tabla de hardware, instalación). Actualizar el GIF en cuanto exista el demo de Fase 0 (laptop).
-- **assets/demo_torno_sin_lentes.gif**: grabado en Fase 0, sin hardware — es el activo más importante para Fondeadora/Kickstarter.
+- **README.md**: mantener la estructura que ya tienes (badges, problema cuantificado, demo GIF, tabla de hardware, instalación). Actualizar el GIF en cuanto exista el demo de EPP de Fase 0 (Raspberry Pi + webcam ya disponibles).
+- **assets/demo_torno_sin_lentes.gif**: grabado en Fase 0 con el hardware ya disponible (Raspberry Pi + webcam) — es el activo más importante para Fondeadora/Kickstarter.
 - **docs/pitch-one-pager.md** (nuevo, opcional): resumen de 1 página — problema, solución, costo, tracción (GitHub stars, talleres piloto), ask. Reutiliza el copy del README.
 - **Badges**: mantener status, hardware, license, "Hecho en México" — coherencia visual en Shields.io.
 - **Naming**: "Taller Seguro Vision" consistente en README, CLAUDE.md, systemd service name, y config `station_id` prefix.
@@ -271,18 +273,15 @@ No hay usuarios, cuentas ni sesiones — es un dispositivo físico por estación
 
 ## 9. Build Order
 
-**Fase 0 — Demo sin hardware (para la campaña de fondeo)**
+**Fase 0 — MVP de EPP en el hardware ya disponible (para la campaña de fondeo)**
 
-**Nota: máquina de desarrollo y logística de pruebas**
-La Fase 0 se desarrolla y graba en tu Lenovo ThinkPad T480 (Windows, Intel i7-8650U, 32GB RAM, iGPU Intel UHD 620, sin GPU NVIDIA). Esto define dos decisiones:
+**Nota: hardware y logística de pruebas**
+Ya se cuenta con una **Raspberry Pi + una webcam USB sencilla** — el pipeline de Fase 0 corre directo ahí, no solo en una laptop. Esto define las decisiones de esta fase:
 
-- **Backend de inferencia**: usar `inference_backend: openvino` (no `pt` puro) — sin GPU dedicada, OpenVINO es la diferencia entre un demo fluido y uno entrecortado en el mismo i7-8650U. `.pt` queda como fallback si alguien más clona el repo en una máquina con GPU NVIDIA.
-- **No se necesita comprar una GPU nueva para la Fase 0 ni para el entrenamiento.** El entrenamiento (Step 9) ya está planeado en Google Colab (GPU gratuita) precisamente porque el T480 no tiene GPU dedicada — sería demasiado lento entrenar localmente. Si más adelante quieres iterar más rápido que Colab, una GPU nueva es una mejora opcional, no un bloqueante; no lo consideres gasto necesario para levantar el capital semilla.
-- **Quién graba el footage de prueba**: para el demo no necesitas el torno real ni un "equipo" de pruebas — tú mismo frente a la webcam del T480 es suficiente para la primera versión. Recomendaciones para que se vea creíble:
-  - Simula la "zona roja" con cinta de color en el escritorio o una caja, ya que no hay torno físico todavía.
-  - Grábate poniéndote y quitándote los lentes de seguridad, y con/sin guantes, para las clases `no_glasses` y `glove_on_lathe`.
-  - Si puedes, pide a 1-2 personas más (familiar, el conocido dueño del taller) que aparezcan brevemente frente a cámara — variar cara/manos ayuda a que el modelo público de PPE generalice mejor y el GIF no se vea como "una sola toma casera".
-  - Esto no reemplaza el piloto real (Step 15) — es solo para el activo de fondeo.
+- **Backend de inferencia**: usar `inference_backend: "pt"` en la Pi — corre en su CPU ARM sin exportar nada ni comprar Coral. Es más lento que con aceleración, pero suficiente para validar 2 clases (lentes, casco) en tiempo casi real. Si se sigue usando el Lenovo ThinkPad T480 (Windows, Intel i7-8650U, 32GB RAM, iGPU Intel UHD 620) para grabar demos o iterar más rápido, ahí sí conviene `inference_backend: "openvino"` — pero es exclusivo de CPU/iGPU Intel x86, **nunca uses `openvino` en la Pi** (ARM).
+- **No se necesita comprar una GPU ni un acelerador para esta fase.** El entrenamiento (Step 9) está planeado en Google Colab (GPU gratuita). Un Coral USB Accelerator es mejora opcional para el roadmap de near-miss, no un bloqueante del MVP de EPP.
+- **Alcance de detección reducido a EPP**: `no_glasses` (sin lentes) y `no_helmet` (sin casco) — ambas clases existen en datasets públicos de PPE (Roboflow Universe), así que no se necesita grabar footage propio para arrancar. Las clases de near-miss (`glove_on_lathe`, `hand_in_red_zone`, `chuck_key_visible`) y la calibración de zona roja se mueven al roadmap (Fase 2), porque dependen de dataset propio y del kit físico completo (torno real, relay, torre Andon).
+- **Quién graba el footage de prueba**: para el demo no necesitas el torno real — tú mismo frente a la webcam conectada a la Pi es suficiente. Grábate poniéndote y quitándote los lentes de seguridad y el casco. Si puedes, pide a 1-2 personas más que aparezcan brevemente frente a cámara — variar cara ayuda a que el modelo público de PPE generalice mejor y el GIF no se vea como "una sola toma casera". Esto no reemplaza el piloto real (Step 15) — es solo para el activo de fondeo.
 
 **Step 1: Scaffolding del repo**
 `pyproject.toml`, estructura de carpetas de la sección 3, `.gitignore` (excluir `models/*.pt`, `models/*.tflite`, `datasets/raw/`, `clips/`), `LICENSE` Apache 2.0, GitHub Actions CI (`ruff check` + `pytest`). README con la estructura que ya existe.
@@ -290,48 +289,50 @@ La Fase 0 se desarrolla y graba en tu Lenovo ThinkPad T480 (Windows, Intel i7-86
 **Step 2: Interfaces abstractas**
 Implementar `CameraSource`, `Detector`, `AlertOutput` como ABCs en `capture/base.py`, `inference/base.py`, `alert/base.py`. Implementar `WebcamSource`, `VideoFileSource`, `MockAlertOutput` (solo imprime a consola). Sin modelo real todavía — usar detecciones fake para probar el cableado.
 
-**Step 3: Zone + Rules Engine (lógica pura, testeable sin modelo ni hardware)**
-`zone.py` (point-in-polygon sobre coordenadas normalizadas), `rules_engine.py` (combina detecciones + config → `Event | None`). Tests unitarios con fixtures sintéticas de detecciones — esto se puede testear 100% en CI sin GPU ni cámara.
+**Step 3: Rules Engine (lógica pura, testeable sin modelo ni hardware)**
+`rules_engine.py` (combina detecciones de EPP + config → `Event | None`, evaluando solo `no_glasses`/`no_helmet` contra `classes_enabled` y `confidence_thresholds`). Tests unitarios con fixtures sintéticas de detecciones — esto se puede testear 100% en CI sin GPU ni cámara. `zone.py` (point-in-polygon) se implementa igual como utilidad pura, pero no lo usa `rules_engine` en v1 — queda listo para cuando se retomen las reglas de near-miss del roadmap.
 
 **Step 4: Detector real con modelo público (sin entrenar nada propio todavía)**
-Usar un modelo YOLOv8n pre-entrenado + un dataset público de PPE/lentes de seguridad de Roboflow Universe (existen varios: safety-glasses, PPE-detection) para tener detección real de "sin lentes" funcionando HOY. `YoloPtDetector` corre en CPU de laptop.
+Usar un modelo YOLOv8n pre-entrenado + un dataset público de PPE (lentes/casco) de Roboflow Universe (existen varios: `safety-glasses`, `hard-hat-detection`, `PPE-detection`) para tener detección real de `no_glasses`/`no_helmet` funcionando HOY. `YoloPtDetector` corre en CPU — de la Pi o de la laptop.
 
 **Step 5: Pipeline end-to-end en modo demo**
-`pipeline.py` conecta `WebcamSource` → `YoloPtDetector` → `rules_engine` → `MockAlertOutput`. Correr `python app.py --mode demo` en la laptop: debe imprimir "🔴 ALERTA: no_glasses" en consola al quitarse los lentes frente a la webcam.
+`pipeline.py` conecta `WebcamSource` → `YoloPtDetector` → `rules_engine` → `MockAlertOutput`. Correr `python app.py --mode demo` en la Raspberry Pi (o la laptop): debe imprimir "🔴 ALERTA: no_glasses" o "🔴 ALERTA: no_helmet" en consola al quitarse los lentes o el casco frente a la webcam.
 
 **Step 6: Ring buffer + clip writer**
 `ring_buffer.py` (deque de frames con timestamps) + `clip_writer.py` (al disparar un Event, escribe pre+post roll a `clips/` local con `cv2.VideoWriter` + JSON sidecar). Probar localmente, generar los primeros clips de prueba.
 
 **Step 7: Grabar el demo y pulir el README**
-Grabar `assets/demo_torno_sin_lentes.gif` con el pipeline de demo real (no un mockup). Embeber en el README. Este es el entregable clave antes de lanzar la campaña de fondeo — no depende de ningún componente físico del kit final.
+Grabar `assets/demo_torno_sin_lentes.gif` con el pipeline de EPP real corriendo en la Raspberry Pi + webcam ya disponibles (no un mockup). Embeber en el README. Este es el entregable clave antes de lanzar la campaña de fondeo — no depende de comprar el resto del kit (Coral, cámara CSI, torre Andon).
 
-**Fase 1 — Dataset y modelo propio (en paralelo al fondeo)**
+**Fase 1 — Dataset y modelo propio de EPP (en paralelo al fondeo)**
 
 **Step 8: Plan de dataset**
-`datasets/README.md`: documentar qué datasets públicos se usan para bootstrap (lentes de seguridad, guantes/PPE) y el plan de recolección propia para las clases más específicas de este proyecto (guante-en-torno, mano-en-zona-roja, llave-de-mandril) que no existen en datasets públicos — requieren grabar en el taller real.
+`datasets/README.md`: documentar qué datasets públicos de PPE se usan para bootstrap de `no_glasses` y `no_helmet` (ya cubren ambas clases sin grabar nada propio). El plan de recolección propia para las clases de near-miss (`glove_on_lathe`, `hand_in_red_zone`, `chuck_key_visible`) queda documentado como roadmap — no existen en datasets públicos y requieren grabar en el taller real cuando se retomen.
 
 **Step 9: Entrenamiento inicial**
-Notebook de Colab: fine-tune YOLOv8n sobre el dataset combinado (público + lo que se pueda recolectar). Exportar `.pt` para seguir iterando el modo demo con mejor precisión.
+Notebook de Colab: fine-tune YOLOv8n sobre el dataset combinado de EPP (público + lo que se pueda recolectar). Exportar `.pt` para seguir iterando el modo demo con mejor precisión, corriendo directo en la Pi.
 
-**Fase 2 — Hardware (solo después de asegurar capital)**
+**Fase 2 — Kit físico completo + near-miss (roadmap, después de asegurar capital)**
 
-**Step 10: Bring-up de hardware por separado**
+Esta fase retoma las clases de near-miss (`glove_on_lathe`, `hand_in_red_zone`, `chuck_key_visible`) y el resto del kit físico (Coral, cámara CSI, relay, torre Andon) — no es parte del MVP de EPP que ya corre en la Raspberry Pi + webcam.
+
+**Step 10: Bring-up de hardware adicional por separado**
 `install.sh` para Raspberry Pi OS Lite: dependencias, udev rules del Coral USB Accelerator. Scripts de prueba aislados: captura de cámara (Picamera2), toggle de GPIO/relay, benchmark de inferencia EdgeTPU — cada componente se valida solo, antes de integrar.
 
 **Step 11: Export a EdgeTPU**
 `scripts/export_to_edgetpu.sh`: `.pt` → TFLite int8 → `edgetpu_compiler`. Validar con `bench_inference.py` que el FPS real en el Pi+Coral es aceptable (ajustar expectativas de 20 FPS si no se alcanza con el modelo multi-clase).
 
 **Step 12: Adapters de producción**
-Implementar `PicameraSource`, `YoloEdgeTPUDetector`, `GpioAlertOutput`. Cambiar `mode: production` en el config y correr el mismo `pipeline.py` sin tocar `rules_engine.py` ni `clip_writer.py`.
+Implementar `PicameraSource`, `YoloEdgeTPUDetector`, `GpioAlertOutput`. Cambiar `mode: production` en el config y correr el mismo `pipeline.py` sin tocar `rules_engine.py` ni `clip_writer.py`. Reintroducir en `rules_engine.py` el matching basado en `zone.py`/`bbox_in_zone` para `hand_in_red_zone`, análogo al que existía antes del pivote a solo-EPP.
 
 **Step 13: Calibración de zona en sitio**
-Correr `calibrate_zone.py` en el taller real, sobre el torno real, para generar el `red_zone_polygon` correcto de `torno_01.json`.
+Correr `calibrate_zone.py` en el taller real, sobre el torno real, para generar el `red_zone_polygon` correcto de `torno_01.json` (campo `zone`, opcional desde el pivote a EPP-only, vuelve a poblarse aquí).
 
 **Step 14: systemd + robustez**
 `taller-seguro.service`: auto-start, auto-restart on crash, verificación de montaje de USB al boot, rotación/alerta de espacio en disco.
 
 **Step 15: Piloto de campo**
-1-2 semanas en el taller real. Medir falsos positivos, ajustar `confidence_thresholds` por clase. Recolectar clips reales para re-entrenar el modelo con datos propios.
+1-2 semanas en el taller real. Primero valida EPP (ya corriendo desde Fase 0); luego, con el kit completo, mide falsos positivos de near-miss y ajusta `confidence_thresholds` por clase. Recolectar clips reales para re-entrenar el modelo con datos propios.
 
 **Step 16: Repo v2 + replicación**
 Actualizar README con métricas reales del piloto. Generalizar `install.sh` y la documentación de config para que un segundo taller pueda replicar sin ayuda directa. `CONTRIBUTING.md` para colaboradores externos.
@@ -341,8 +342,8 @@ Actualizar README con métricas reales del piloto. Generalizar `install.sh` y la
 ## 10. Environment Setup
 
 ### Prerequisitos
-- **Modo demo (laptop)**: Python 3.11+, webcam, cualquier OS. Confirmado para tu Lenovo ThinkPad T480 (Windows, i7-8650U, 32GB RAM, UHD 620) — no requiere WSL, corre nativo con Python para Windows.
-- **Modo producción**: Raspberry Pi 5 (8GB), Raspberry Pi OS Lite 64-bit (Bookworm), Google Coral USB Accelerator, Arducam IMX477 + lente 6mm CS, relay 5V + torre Andon 12V con fuente externa.
+- **MVP de EPP (`mode: "demo"`, hardware ya disponible)**: Python 3.11+, la Raspberry Pi (Raspberry Pi OS) + webcam USB sencilla ya en mano, `inference_backend: "pt"`. También corre igual en cualquier laptop con Python 3.11+ y webcam — confirmado para el Lenovo ThinkPad T480 (Windows, i7-8650U, 32GB RAM, UHD 620) con `inference_backend: "openvino"`, útil para grabar demos o entrenar.
+- **Roadmap — Modo producción completo**: además de la Pi ya disponible, requiere Google Coral USB Accelerator, Arducam IMX477 + lente 6mm CS, relay 5V + torre Andon 12V con fuente externa — ninguno comprado todavía.
 
 ### Variables de entorno
 No hay secretos ni API keys (proyecto 100% offline). Únicas variables opcionales:
@@ -354,26 +355,28 @@ No hay secretos ni API keys (proyecto 100% offline). Únicas variables opcionale
 
 ### Comandos de setup inicial
 
+```bash
+# MVP de EPP — Raspberry Pi + webcam USB ya disponibles (Raspberry Pi OS)
+git clone https://github.com/<tu-usuario>/taller-seguro-vision.git
+cd taller-seguro-vision
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt   # sin extras — "pt" corre en la CPU ARM de la Pi
+python app.py --mode demo --zona_config config/torno_01.json
+```
+
 ```powershell
-# Modo demo — Windows (ThinkPad T480 u otra laptop Windows)
+# Alternativa — Windows (ThinkPad T480 u otra laptop Windows, para grabar demos/entrenar)
 git clone https://github.com/<tu-usuario>/taller-seguro-vision.git
 cd taller-seguro-vision
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-pip install .[intel]              # OpenVINO — recomendado sin GPU NVIDIA (caso T480)
+pip install .[intel]              # OpenVINO — recomendado sin GPU NVIDIA (caso T480). NO usar en la Pi (ARM).
 python app.py --mode demo --zona_config config/torno_01.json
 ```
 
 ```bash
-# Modo demo — Linux/Mac (o si alguien más clona el repo con GPU NVIDIA)
-git clone https://github.com/<tu-usuario>/taller-seguro-vision.git
-cd taller-seguro-vision
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-python app.py --mode demo --zona_config config/torno_01.json
-
-# Modo producción (Raspberry Pi 5, después de tener el kit)
+# Roadmap — modo producción (Raspberry Pi + Coral/GPIO/CSI, después de sumar el resto del kit)
 bash scripts/install.sh
 sudo systemctl enable taller-seguro.service
 sudo systemctl start taller-seguro.service
@@ -393,7 +396,7 @@ sudo systemctl start taller-seguro.service
 | numpy | Manipulación de frames/arrays |
 | pydantic | Validación de config JSON por estación |
 
-### Extra `[intel]` (recomendado para tu T480 y cualquier laptop Intel sin GPU dedicada, `pip install .[intel]`)
+### Extra `[intel]` (recomendado para tu T480 y cualquier laptop Intel sin GPU dedicada, `pip install .[intel]` — **no instalar en la Raspberry Pi, es x86-only**)
 | Paquete | Propósito |
 |---------|-----------|
 | openvino | Runtime de inferencia optimizado para CPU/iGPU Intel (AVX2 + UHD 620) |
@@ -455,7 +458,7 @@ No aplica E2E de navegador (no hay UI web).
 ```markdown
 # Taller Seguro Vision
 
-Dispositivo edge AI offline que detecta near-miss (sin lentes, guantes, mano en zona roja, llave de mandril) en tornos/fresadoras y graba clips locales de evidencia.
+Dispositivo edge AI offline que graba clips locales de evidencia en tornos/fresadoras. **Alcance actual (v1): detección de EPP (sin lentes, sin casco) corriendo en la Raspberry Pi + webcam USB sencilla que ya se tienen.** Las reglas de near-miss (guantes, mano en zona roja, llave de mandril) son roadmap — requieren hardware/dataset adicional, no forman parte del v1.
 
 ## Commands
 
@@ -469,7 +472,7 @@ Dispositivo edge AI offline que detecta near-miss (sin lentes, guantes, mano en 
 
 ## Tech Stack
 
-Python 3.11 + Ultralytics YOLOv8n (OpenVINO en laptops Intel sin GPU dedicada, .pt como fallback portable, TFLite/EdgeTPU en producción) + OpenCV + Pydantic (config) + gpiozero/Picamera2/pycoral (solo modo producción, deps opcionales `[pi]`) + systemd (producción). Dev machine de referencia: ThinkPad T480 (Windows, i7-8650U, 32GB RAM, sin GPU NVIDIA) → usar `inference_backend: openvino`.
+Python 3.11 + Ultralytics YOLOv8n (`.pt` en CPU — backend por default, corre en la Raspberry Pi (ARM) que ya se tiene; OpenVINO como alternativa solo en laptops Intel x86 sin GPU dedicada, nunca en la Pi; TFLite/EdgeTPU cuando se sume el Coral USB Accelerator) + OpenCV + Pydantic (config) + gpiozero/Picamera2/pycoral (solo modo producción, deps opcionales `[pi]`) + systemd (producción). Hardware ya disponible: Raspberry Pi + webcam USB sencilla → `inference_backend: "pt"`, `camera_source: "webcam"`. Dev machine de referencia para autoría de demo/entrenamiento: ThinkPad T480 (Windows, i7-8650U, 32GB RAM, sin GPU NVIDIA) → usar `inference_backend: openvino` ahí, nunca en la Pi.
 
 ## Architecture
 
@@ -483,12 +486,12 @@ Python 3.11 + Ultralytics YOLOv8n (OpenVINO en laptops Intel sin GPU dedicada, .
 - `config/*.json` — un archivo por estación física (torno_01.json, torno_02.json)
 
 ### Flujo de datos
-`CameraSource.read_frame()` → `Detector.detect(frame)` → `rules_engine.evaluate(detections, zone_config)` → si hay riesgo: `AlertOutput.trigger(event_type)` + `ClipWriter.flush(event)`. El buffer circular corre siempre; solo se vuelca a disco cuando hay un Event.
+`CameraSource.read_frame()` → `Detector.detect(frame)` → `rules_engine.evaluate(detections, station_config)` → si hay riesgo: `AlertOutput.trigger(event_type)` + `ClipWriter.flush(event)`. El buffer circular corre siempre; solo se vuelca a disco cuando hay un Event.
 
 ### Patrones clave
 - **Todo es intercambiable por config, nunca por rama de código.** `pipeline.py` instancia `CameraSource`/`Detector`/`AlertOutput` según `StationConfig.mode` y `.camera_source`/`.alert_output` — nunca hay un `if is_raspberry_pi()` disperso en la lógica de negocio.
 - **Imports de hardware son locales al adapter.** `picamera2`, `gpiozero`, `pycoral` se importan SOLO dentro de `picamera_source.py`, `gpio_alert.py`, `yolo_edgetpu_detector.py` respectivamente — nunca en `pipeline.py` ni en `rules_engine.py`. Esto permite que el repo instale y corra en modo demo en cualquier laptop sin esas dependencias.
-- **La lógica de negocio es pura y se testea sin hardware.** `zone.py` y `rules_engine.py` no importan nada de `capture/`, `inference/` ni `alert/` — reciben datos ya extraídos (detecciones, polígonos) y regresan un `Event | None`.
+- **La lógica de negocio es pura y se testea sin hardware.** `zone.py` y `rules_engine.py` no importan nada de `capture/`, `inference/` ni `alert/` — reciben datos ya extraídos (detecciones, config) y regresan un `Event | None`. `zone.py` (point-in-polygon) no lo usa `rules_engine` en el alcance actual (solo EPP) — queda listo para las reglas de near-miss del roadmap.
 
 ## Code Organization Rules
 

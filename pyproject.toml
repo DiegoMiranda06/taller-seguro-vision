@@ -5,13 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "taller-seguro-vision"
 version = "0.1.0"
-description = "Dispositivo edge AI offline que detecta near-miss (sin lentes, guantes, mano en zona roja, llave de mandril) en tornos/fresadoras y graba clips locales de evidencia."
+description = "Dispositivo edge AI offline que detecta EPP (sin lentes, sin casco) en tornos/fresadoras y graba clips locales de evidencia. Roadmap: near-miss (guantes, mano en zona roja, llave de mandril)."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.11"
 authors = [{ name = "Diego Miranda" }]
 
-# Deps base: corren en cualquier laptop, sin hardware de Raspberry Pi.
+# Deps base: corren en cualquier laptop o en la Raspberry Pi (ARM) ya
+# disponible, sin hardware adicional de Raspberry Pi (Coral/GPIO/CSI).
 # Ver Reglas No Negociables #6 en CLAUDE.md: requirements.txt (base) nunca
 # debe forzar gpiozero/picamera2/pycoral/tflite-runtime.
 dependencies = [

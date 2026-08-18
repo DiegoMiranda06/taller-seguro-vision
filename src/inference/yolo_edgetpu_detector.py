@@ -5,15 +5,15 @@
 "Imports de hardware son locales al adapter" en CLAUDE.md): this file is
 never imported by `pipeline.py` unless a config actually selects the
 `edgetpu` backend, so the demo/laptop install never needs these installed.
-Not runnable or testable in this sandbox — no Coral USB Accelerator or
-compiled `edgetpu.tflite` model available here; verify on-device per
-blueprint Steps 10-11.
+Not runnable o testable en este sandbox — no hay Coral USB Accelerator ni
+un `edgetpu.tflite` compilado disponible aquí; verificar on-device per
+blueprint Steps 10-11. No es el camino actual: con solo Raspberry Pi +
+webcam simple (sin Coral todavía), usar `inference_backend: "pt"`.
 
 `labels` maps the int8 model's output class indices to the raw class names
-`rules_engine` understands (`no_glasses`, `glove_on_lathe`,
-`chuck_key_visible`, `hand`) — supplied by the caller (pipeline.py), never
-hardcoded here, since the label order depends on how Step 9's training
-dataset was structured.
+`rules_engine` understands (`no_glasses`, `no_helmet`) — supplied by the
+caller (pipeline.py), never hardcoded here, since the label order depends
+on how el entrenamiento estructuró el dataset.
 """
 
 from __future__ import annotations

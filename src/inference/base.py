@@ -8,12 +8,11 @@ object rules_engine and inference/ both understand — inference/ depends on
 core/, never the reverse.
 
 **Deliberately out of scope here (per this build's Step 8-9 boundary)**:
-no trained custom model exists yet for `no_glasses` / `glove_on_lathe` /
-`hand_in_red_zone` / `chuck_key_visible`. Concrete detectors below are
-generic Ultralytics-API wrappers that load whatever `model_path` a config
-points at — they are not blocked on real weights, and are exercised in
-tests exclusively through `FakeDetector` test doubles, never by loading an
-actual model.
+no trained custom model exists yet for `no_glasses` / `no_helmet`.
+Concrete detectors below are generic Ultralytics-API wrappers that load
+whatever `model_path` a config points at — they are not blocked on real
+weights, and are exercised in tests exclusively through `FakeDetector`
+test doubles, never by loading an actual model.
 """
 
 from __future__ import annotations
@@ -32,8 +31,7 @@ class Detector(ABC):
     def detect(self, frame: np.ndarray) -> list[Detection]:
         """Return all detections found in `frame`, in normalized (0-1)
         bbox coordinates, with `class_name` matching one of the raw
-        classes `rules_engine` understands (`no_glasses`,
-        `glove_on_lathe`, `chuck_key_visible`, `hand`)."""
+        classes `rules_engine` understands (`no_glasses`, `no_helmet`)."""
 
 
 def ultralytics_result_to_detections(result) -> list[Detection]:

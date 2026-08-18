@@ -1,6 +1,6 @@
 # Taller Seguro Vision
 
-Dispositivo edge AI offline que detecta near-miss (sin lentes, guantes, mano en zona roja, llave de mandril) en tornos/fresadoras y graba clips locales de evidencia.
+Dispositivo edge AI offline que graba clips locales de evidencia en tornos/fresadoras. **Alcance actual (v1): detección de EPP (sin lentes, sin casco) corriendo en la Raspberry Pi + webcam USB sencilla que ya se tienen.** Las reglas de near-miss (guantes, mano en zona roja, llave de mandril) son roadmap — requieren hardware/dataset adicional, no forman parte del v1.
 
 ## Commands
 
@@ -14,7 +14,7 @@ Dispositivo edge AI offline que detecta near-miss (sin lentes, guantes, mano en 
 
 ## Tech Stack
 
-Python 3.11 + Ultralytics YOLOv8n (OpenVINO en laptops Intel sin GPU dedicada, .pt como fallback portable, TFLite/EdgeTPU en producción) + OpenCV + Pydantic (config) + gpiozero/Picamera2/pycoral (solo modo producción, deps opcionales `[pi]`) + systemd (producción). Dev machine de referencia: ThinkPad T480 (Windows, i7-8650U, 32GB RAM, sin GPU NVIDIA) → usar `inference_backend: openvino`.
+Python 3.11 + Ultralytics YOLOv8n (`.pt` en CPU — backend por default, corre en la Raspberry Pi (ARM) que ya se tiene; OpenVINO como alternativa solo en laptops Intel x86 sin GPU dedicada, nunca en la Pi; TFLite/EdgeTPU cuando se sume el Coral USB Accelerator) + OpenCV + Pydantic (config) + gpiozero/Picamera2/pycoral (solo modo producción, deps opcionales `[pi]`) + systemd (producción). Hardware ya disponible: Raspberry Pi + webcam USB sencilla → `inference_backend: "pt"`, `camera_source: "webcam"`. Dev machine de referencia para autoría de demo/entrenamiento: ThinkPad T480 (Windows, i7-8650U, 32GB RAM, sin GPU NVIDIA) → usar `inference_backend: openvino` ahí, nunca en la Pi.
 
 ## Architecture
 
@@ -28,12 +28,12 @@ Python 3.11 + Ultralytics YOLOv8n (OpenVINO en laptops Intel sin GPU dedicada, .
 - `config/*.json` — un archivo por estación física (torno_01.json, torno_02.json)
 
 ### Flujo de datos
-`CameraSource.read_frame()` → `Detector.detect(frame)` → `rules_engine.evaluate(detections, zone_config)` → si hay riesgo: `AlertOutput.trigger(event_type)` + `ClipWriter.flush(event)`. El buffer circular corre siempre; solo se vuelca a disco cuando hay un Event.
+`CameraSource.read_frame()` → `Detector.detect(frame)` → `rules_engine.evaluate(detections, station_config)` → si hay riesgo: `AlertOutput.trigger(event_type)` + `ClipWriter.flush(event)`. El buffer circular corre siempre; solo se vuelca a disco cuando hay un Event.
 
 ### Patrones clave
 - **Todo es intercambiable por config, nunca por rama de código.** `pipeline.py` instancia `CameraSource`/`Detector`/`AlertOutput` según `StationConfig.mode` y `.camera_source`/`.alert_output` — nunca hay un `if is_raspberry_pi()` disperso en la lógica de negocio.
 - **Imports de hardware son locales al adapter.** `picamera2`, `gpiozero`, `pycoral` se importan SOLO dentro de `picamera_source.py`, `gpio_alert.py`, `yolo_edgetpu_detector.py` respectivamente — nunca en `pipeline.py` ni en `rules_engine.py`. Esto permite que el repo instale y corra en modo demo en cualquier laptop sin esas dependencias.
-- **La lógica de negocio es pura y se testea sin hardware.** `zone.py` y `rules_engine.py` no importan nada de `capture/`, `inference/` ni `alert/` — reciben datos ya extraídos (detecciones, polígonos) y regresan un `Event | None`.
+- **La lógica de negocio es pura y se testea sin hardware.** `zone.py` y `rules_engine.py` no importan nada de `capture/`, `inference/` ni `alert/` — reciben datos ya extraídos (detecciones, config) y regresan un `Event | None`. `zone.py` (point-in-polygon) no lo usa `rules_engine` en el alcance actual (solo EPP) — queda listo para las reglas de near-miss del roadmap.
 
 ## Code Organization Rules
 

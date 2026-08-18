@@ -1,36 +1,51 @@
-# Taller Seguro Vision 🦺🤖 - Detección de Near Miss en Tornos y Fresadoras
+# Taller Seguro Vision 🦺🤖 - Detección de EPP y Near Miss en Tornos y Fresadoras
 
 > Un sistema open-source de bajo costo con IA que evita amputaciones y accidentes en talleres metal-mecánicos. 100% offline, < $400 USD por estación.
 
-![Status](https://img.shields.io/badge/status-en%20dise%C3%B1o%20(blueprint)-yellow)
-![Hardware](https://img.shields.io/badge/hardware-Jetson%20Orin%20Nano%20%2F%20Raspberry%20Pi%205-blue)
+![Status](https://img.shields.io/badge/status-MVP%20de%20EPP%20en%20Raspberry%20Pi-yellow)
+![Hardware](https://img.shields.io/badge/hardware-Raspberry%20Pi%20%2B%20webcam%20USB-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-orange)
 ![Hecho en México](https://img.shields.io/badge/Hecho%20en-M%C3%A9xico-red)
 
 ### 🎥 Demo - 15 segundos
-> *Pendiente: GIF del prototipo (Fase 0, sin hardware) detectando sin lentes y prendiendo la alerta.*
+> *Pendiente: GIF del MVP (Raspberry Pi + webcam USB) detectando falta de lentes/casco y prendiendo la alerta.*
 > `assets/demo_torno_sin_lentes.gif`
 
 ### El Problema es Gigante y Nadie lo Mide
 - **1 accidente en torno/fresadora cuesta en México $380,000 MXN** (IMSS + multa STPS + paro de máquina).
-- El 80% de los accidentes avisan antes: operar sin lentes, manos cerca del chuck girando, llave de chuck olvidada.
+- El 80% de los accidentes avisan antes: operar sin lentes, sin casco, manos cerca del chuck girando, llave de chuck olvidada.
 - Los sistemas industriales de seguridad con visión cuestan $10k - $25k USD por máquina. Impagable para 250,000 talleres PyME en México.
 - **Ningún taller mide sus "casi accidentes" (Near Miss).** Sin datos, no hay prevención.
 
 ### La Solución: Open Core + Hardware de Borde
 Hardware de borde que solo graba y alerta, no detiene la máquina. Sin nube, sin mensualidades de internet.
 
-**Detecta en tiempo real:**
-1. ✅ / ❌ Operador con / sin lentes de seguridad
-2. ⚠️ Mano entrando en ZONA ROJA (calibrada por estación, cerca del chuck/husillo girando)
-3. ⛔ Uso de guantes en torno (causa #1 de atrapamiento)
-4. 🔑 Llave de chuck visible cerca del husillo
+**Alcance actual (v1) — detección de EPP en tiempo real:**
+1. ✅ / ❌ Operador con / sin lentes de seguridad (`no_glasses`)
+2. ✅ / ❌ Operador con / sin casco (`no_helmet`)
 
-**Cuando detecta riesgo:** Torre de luz ROJA + guarda clip de 15s (7s antes + 8s después) para reporte STPS.
+Corre hoy con lo que ya tenemos: una **Raspberry Pi + una webcam USB sencilla** — sin necesidad de cámara CSI, acelerador Coral, ni torre de luz todavía.
 
-### 🛠️ Hardware - Kit de ~$8,000 MXN
+**Roadmap (near-miss, requiere hardware/dataset adicional — no es v1):**
+- ⚠️ Mano entrando en ZONA ROJA (calibrada por estación, cerca del chuck/husillo girando)
+- ⛔ Uso de guantes en torno (causa #1 de atrapamiento)
+- 🔑 Llave de chuck visible cerca del husillo
+
+**Cuando detecta riesgo:** Alerta (consola hoy; torre de luz ROJA cuando se sume el relay) + guarda clip de 15s (7s antes + 8s después) para reporte STPS.
+
+### 🛠️ Hardware
 
 Este proyecto es 100% independiente y no está afiliado a ninguna empresa. Diseñado para ser replicable.
+
+**Ya disponible — con esto corre el MVP de EPP hoy:**
+
+| Componente | Detalle |
+| :--- | :--- |
+| Cómputo | Raspberry Pi (ya disponible) |
+| Cámara | Webcam USB sencilla (ya disponible) |
+| Alerta | Consola (`alert_output: "mock"`) — sin torre de luz todavía |
+
+**Kit completo (roadmap, ~$8,000 MXN, para near-miss + alerta física):**
 
 | Componente | Modelo Recomendado | Costo MX aprox |
 | :--- | :--- | :--- |
@@ -44,7 +59,7 @@ Este proyecto es 100% independiente y no está afiliado a ninguna empresa. Dise�
 
 ### 📍 Estado actual del proyecto
 
-Este repo arranca en **Fase 0**: un pipeline de detección corriendo en laptop (webcam, sin hardware físico) para validar el concepto y producir el demo antes de invertir en el kit. El diseño completo — arquitectura, orden de build, y las decisiones técnicas — vive en:
+Ya se cuenta con el hardware mínimo (**Raspberry Pi + webcam USB sencilla**) y el pipeline corre en `mode: "demo"` (webcam + alerta en consola, `inference_backend: "pt"` — corre en la CPU ARM de la Pi, sin necesitar OpenVINO/Coral) detectando solo EPP: lentes y casco. El diseño completo — arquitectura, orden de build, y las decisiones técnicas — vive en:
 
 - [`CLAUDE.md`](./CLAUDE.md) — guía de arquitectura y reglas del proyecto para desarrollo asistido por IA.
 - [`docs/taller-seguro-vision-blueprint.md`](./docs/taller-seguro-vision-blueprint.md) — blueprint técnico completo (stack, modelo de datos, build order paso a paso).

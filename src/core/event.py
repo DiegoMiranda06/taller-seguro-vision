@@ -22,9 +22,7 @@ from pathlib import Path
 
 class EventType(StrEnum):
     NO_GLASSES = "no_glasses"
-    GLOVE_ON_LATHE = "glove_on_lathe"
-    HAND_IN_RED_ZONE = "hand_in_red_zone"
-    CHUCK_KEY_VISIBLE = "chuck_key_visible"
+    NO_HELMET = "no_helmet"
 
 
 @dataclass

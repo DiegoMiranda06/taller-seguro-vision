@@ -1,28 +1,13 @@
 {
   "station_id": "torno_02",
   "mode": "demo",
-  "inference_backend": "openvino",
+  "inference_backend": "pt",
   "camera_source": "webcam",
   "camera_index_or_path": 0,
-  "zone": {
-    "red_zone_polygon": [
-      [0.3, 0.35],
-      [0.7, 0.35],
-      [0.7, 0.95],
-      [0.3, 0.95]
-    ]
-  },
-  "classes_enabled": [
-    "no_glasses",
-    "glove_on_lathe",
-    "hand_in_red_zone",
-    "chuck_key_visible"
-  ],
+  "classes_enabled": ["no_glasses", "no_helmet"],
   "confidence_thresholds": {
     "no_glasses": 0.55,
-    "glove_on_lathe": 0.5,
-    "hand_in_red_zone": 0.45,
-    "chuck_key_visible": 0.6
+    "no_helmet": 0.6
   },
   "alert_output": "mock",
   "gpio_pin": null,

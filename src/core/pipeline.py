@@ -64,9 +64,7 @@ def build_detector(config: StationConfig, models_dir: str | Path = "models") -> 
 
         labels = {
             0: "no_glasses",
-            1: "glove_on_lathe",
-            2: "hand",
-            3: "chuck_key_visible",
+            1: "no_helmet",
         }
         return YoloEdgeTPUDetector(
             model_path=str(models_dir / "best_edgetpu.tflite"), labels=labels

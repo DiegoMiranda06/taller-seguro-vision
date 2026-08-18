@@ -15,7 +15,7 @@ import cv2
 import numpy as np
 import pytest
 
-from src.config.schema import StationConfig, ZoneConfig
+from src.config.schema import StationConfig
 from src.core.rules_engine import Detection
 from src.inference.base import Detector
 
@@ -58,15 +58,7 @@ def sample_station_config() -> StationConfig:
         inference_backend="pt",
         camera_source="video_file",
         camera_index_or_path=None,
-        zone=ZoneConfig(
-            red_zone_polygon=[(0.3, 0.3), (0.7, 0.3), (0.7, 0.8), (0.3, 0.8)]
-        ),
-        classes_enabled=[
-            "no_glasses",
-            "glove_on_lathe",
-            "hand_in_red_zone",
-            "chuck_key_visible",
-        ],
+        classes_enabled=["no_glasses", "no_helmet"],
         confidence_thresholds={},
         alert_output="mock",
         gpio_pin=None,
