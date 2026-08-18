@@ -59,7 +59,23 @@ Este proyecto es 100% independiente y no está afiliado a ninguna empresa. Dise�
 
 ### 📍 Estado actual del proyecto
 
-Ya se cuenta con el hardware mínimo (**Raspberry Pi + webcam USB sencilla**) y el pipeline corre en `mode: "demo"` (webcam + alerta en consola, `inference_backend: "pt"` — corre en la CPU ARM de la Pi, sin necesitar OpenVINO/Coral) detectando solo EPP: lentes y casco. El diseño completo — arquitectura, orden de build, y las decisiones técnicas — vive en:
+**Hardware mínimo: ✅ confirmado.** Ya se cuenta con una **Raspberry Pi + una webcam USB sencilla** — el pipeline apunta a ese hardware por default (`camera_source: "webcam"`, `inference_backend: "pt"`, corre en la CPU ARM de la Pi, sin necesitar OpenVINO ni el Coral USB Accelerator).
+
+**Resultados actuales (Fase 0, en curso):**
+- Pipeline end-to-end implementado y probado: `CameraSource → Detector → rules_engine → AlertOutput + ClipWriter`, con las interfaces (`webcam`, `video_file`, alerta de consola) corriendo sin depender de ningún componente pendiente del kit.
+- Alcance de detección fijado a **2 clases de EPP**: `no_glasses` (sin lentes) y `no_helmet` (sin casco) — evaluadas con umbral de confianza configurable por estación.
+- Config de estación (`config/torno_01.json`, `torno_02.json`) validado con Pydantic para la Raspberry Pi + webcam ya disponibles.
+- Cada evento genera su clip (7s antes + 8s después) y su JSON sidecar con el contrato de datos para reporte STPS.
+- 27 tests unitarios/integración en verde (`pytest`) + lint limpio (`ruff check .`), corriendo en CI en cada push.
+- Pendiente para detección real en vivo: cargar un modelo público de EPP (Roboflow) en `models/best.pt` — hoy el pipeline se valida con detecciones simuladas en los tests, todavía no hay pesos de modelo (a propósito: nunca se commitean a git).
+
+**Próximas etapas:**
+1. **Step 4 (inmediato):** bajar un modelo YOLOv8n pre-entrenado de PPE (lentes + casco) de Roboflow Universe a `models/best.pt` y correr `python app.py --mode demo` con la webcam real de la Pi.
+2. **Step 7:** grabar `assets/demo_torno_sin_lentes.gif` con el pipeline real corriendo en la Raspberry Pi + webcam.
+3. **Fase 1:** documentar y entrenar un modelo propio de EPP (fine-tune en Colab) con datasets públicos combinados.
+4. **Fase 2 (roadmap):** sumar el resto del kit (Coral USB Accelerator, cámara CSI, relay + torre Andon) y retomar las reglas de near-miss (guante en torno, mano en zona roja, llave de mandril).
+
+El diseño completo — arquitectura, orden de build, y las decisiones técnicas — vive en:
 
 - [`CLAUDE.md`](./CLAUDE.md) — guía de arquitectura y reglas del proyecto para desarrollo asistido por IA.
 - [`docs/taller-seguro-vision-blueprint.md`](./docs/taller-seguro-vision-blueprint.md) — blueprint técnico completo (stack, modelo de datos, build order paso a paso).
