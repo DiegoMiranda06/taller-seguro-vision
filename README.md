@@ -2,7 +2,7 @@
 
 > Un sistema open-source de bajo costo con IA que evita amputaciones y accidentes en talleres metal-mecánicos. 100% offline, < $400 USD por estación.
 
-![Status](https://img.shields.io/badge/status-MVP%20en%20Raspberry%20Pi-yellow)
+![Status](https://img.shields.io/badge/status-Fase%201%3A%20dataset%20%2F%20modelo-yellow)
 ![Hardware](https://img.shields.io/badge/hardware-Raspberry%20Pi%20%2B%20webcam%20USB-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-orange)
 ![Hecho en México](https://img.shields.io/badge/Hecho%20en-M%C3%A9xico-red)
@@ -48,7 +48,21 @@ Este proyecto es 100% independiente y no está afiliado a ninguna empresa. Dise�
 
 ### 📍 Estado actual del proyecto
 
-**Hardware mínimo: ✅ confirmado.** Ya se cuenta con una Raspberry Pi + una webcam USB sencilla — el pipeline de **Fase 0** (interfaces de cámara, motor de reglas, buffer circular + grabación de clips) ya está implementado y testeado, corriendo hoy en modo demo sobre ese hardware, antes de invertir en el resto del kit (Coral, cámara CSI, torre Andon). El diseño completo — arquitectura, orden de build, y las decisiones técnicas — vive en:
+**🚧 Fase 1 — Dataset y modelo propio (en curso)**
+
+Con el pipeline de Fase 0 ya validado sobre Raspberry Pi + webcam, el foco actual es construir el dataset y el modelo propios (Steps 8-9 del build order):
+- **Step 8 — Plan de dataset:** combinar datasets públicos de PPE (Roboflow Universe) para `no_glasses` / `glove_on_lathe`, y documentar la recolección propia para las clases específicas del proyecto (`hand_in_red_zone`, `chuck_key_visible`), que no existen en datasets públicos.
+- **Step 9 — Entrenamiento inicial:** fine-tune de YOLOv8n en Google Colab sobre el dataset combinado, para reemplazar el modelo público genérico por uno propio.
+
+<details>
+<summary><strong>✅ Fase 0 — Demo sin hardware (completada)</strong></summary>
+<br>
+
+**Hardware mínimo: ✅ confirmado.** Ya se cuenta con una Raspberry Pi + una webcam USB sencilla — el pipeline de Fase 0 (interfaces de cámara, motor de reglas, buffer circular + grabación de clips) está implementado y testeado, corriendo en modo demo sobre ese hardware, antes de invertir en el resto del kit (Coral, cámara CSI, torre Andon).
+
+</details>
+
+El diseño completo — arquitectura, orden de build, y las decisiones técnicas — vive en:
 
 - [`CLAUDE.md`](./CLAUDE.md) — guía de arquitectura y reglas del proyecto para desarrollo asistido por IA.
 - [`docs/taller-seguro-vision-blueprint.md`](./docs/taller-seguro-vision-blueprint.md) — blueprint técnico completo (stack, modelo de datos, build order paso a paso).
