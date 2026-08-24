@@ -8,6 +8,8 @@
 ![Hecho en México](https://img.shields.io/badge/Hecho%20en-M%C3%A9xico-red)
 
 ### 🎥 Demo - 15 segundos
+📹 [Video del prototipo funcionando](https://www.youtube.com/watch?v=D5mMzkzEC_s) — Raspberry Pi + webcam USB detectando y alertando en vivo.
+
 > *Pendiente: GIF del prototipo corriendo en la Raspberry Pi + webcam USB (hardware mínimo ya disponible) detectando sin lentes y prendiendo la alerta.*
 > `assets/demo_torno_sin_lentes.gif`
 
