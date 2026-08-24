@@ -2,13 +2,13 @@
 
 > Un sistema open-source de bajo costo con IA que evita amputaciones y accidentes en talleres metal-mecánicos. 100% offline, < $400 USD por estación.
 
-![Status](https://img.shields.io/badge/status-en%20dise%C3%B1o%20(blueprint)-yellow)
-![Hardware](https://img.shields.io/badge/hardware-Jetson%20Orin%20Nano%20%2F%20Raspberry%20Pi%205-blue)
+![Status](https://img.shields.io/badge/status-MVP%20en%20Raspberry%20Pi-yellow)
+![Hardware](https://img.shields.io/badge/hardware-Raspberry%20Pi%20%2B%20webcam%20USB-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-orange)
 ![Hecho en México](https://img.shields.io/badge/Hecho%20en-M%C3%A9xico-red)
 
 ### 🎥 Demo - 15 segundos
-> *Pendiente: GIF del prototipo (Fase 0, sin hardware) detectando sin lentes y prendiendo la alerta.*
+> *Pendiente: GIF del prototipo corriendo en la Raspberry Pi + webcam USB (hardware mínimo ya disponible) detectando sin lentes y prendiendo la alerta.*
 > `assets/demo_torno_sin_lentes.gif`
 
 ### El Problema es Gigante y Nadie lo Mide
@@ -32,6 +32,8 @@ Hardware de borde que solo graba y alerta, no detiene la máquina. Sin nube, sin
 
 Este proyecto es 100% independiente y no está afiliado a ninguna empresa. Diseñado para ser replicable.
 
+**Hardware mínimo: ✅ ya disponible.** Ya se cuenta con una Raspberry Pi + una webcam USB sencilla — con esto el pipeline corre hoy en modo demo (`camera_source: "webcam"`), sin necesitar todavía el Coral USB Accelerator, la cámara CSI ni la torre de luz física del kit completo.
+
 | Componente | Modelo Recomendado | Costo MX aprox |
 | :--- | :--- | :--- |
 | Cómputo | Raspberry Pi 5 8GB | $2,160 MXN |
@@ -44,7 +46,7 @@ Este proyecto es 100% independiente y no está afiliado a ninguna empresa. Dise�
 
 ### 📍 Estado actual del proyecto
 
-Este repo arranca en **Fase 0**: un pipeline de detección corriendo en laptop (webcam, sin hardware físico) para validar el concepto y producir el demo antes de invertir en el kit. El diseño completo — arquitectura, orden de build, y las decisiones técnicas — vive en:
+**Hardware mínimo: ✅ confirmado.** Ya se cuenta con una Raspberry Pi + una webcam USB sencilla — el pipeline de **Fase 0** (interfaces de cámara, motor de reglas, buffer circular + grabación de clips) ya está implementado y testeado, corriendo hoy en modo demo sobre ese hardware, antes de invertir en el resto del kit (Coral, cámara CSI, torre Andon). El diseño completo — arquitectura, orden de build, y las decisiones técnicas — vive en:
 
 - [`CLAUDE.md`](./CLAUDE.md) — guía de arquitectura y reglas del proyecto para desarrollo asistido por IA.
 - [`docs/taller-seguro-vision-blueprint.md`](./docs/taller-seguro-vision-blueprint.md) — blueprint técnico completo (stack, modelo de datos, build order paso a paso).
